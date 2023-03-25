@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const Users = require('../models/Users');
 const { logError, logConsole } = require('./logger');
 const RG = require('./response-generator');
 
@@ -16,6 +17,7 @@ function validateOTPToken(req, res, next) {
 				const payload = jwt.verify(token, jwtSecret);
 				req.user = payload;
 			}
+
 			if (req.user.token_type !== 'OTP') {
 				return RG.respondInternalError(res, 403)('ERR_TOKEN_INVALID');
 			}
@@ -33,14 +35,24 @@ function validateOTPToken(req, res, next) {
 	}
 }
 
-function validateUserToken(req, res, next) {
+async function validateUserToken(req, res, next) {
 	const token = req.header('token');
 	if (token) {
 		try {
 			if (req.user === null || req.user === undefined) {
 				const payload = jwt.verify(token, jwtSecret);
-				req.user = payload;
+
+				if (payload.token_type !== 'USER') {
+					return RG.respondInternalError(res, 403)('ERR_TOKEN_INVALID');
+				}
+
+				req.user = await Users.findById(payload.user_id);
+
+				if (!req.user.loginStatus || req.user.activeToken !== token) {
+					return RG.respondInternalError(res, 403)('ERR_TOKEN_INVALID');
+				}
 			}
+
 			next();
 		} catch (e) {
 			logError(e);

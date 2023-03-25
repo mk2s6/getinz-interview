@@ -46,15 +46,20 @@ router.post('/validate-otp', validateOTPToken, [isOtp('body', 'otp'), returnVali
 
 	const userToken = genAuthToken({ user_id: user._id, token_type: 'USER' }, true);
 
-	await Users.findByIdAndUpdate(req.user.user_id, { loginStatus: true }).exec();
+	await Users.findByIdAndUpdate(req.user.user_id, { loginStatus: true, activeToken: userToken }).exec();
 
 	res.setHeader('token', userToken);
 	return respondSuccess(res)('User Generate OTP', { user, token: userToken });
 });
 
 router.get('/all', validateUserToken, async (req, res) => {
-	const users = await Users.find({ loginStatus: true }).exec();
+	const users = await Users.find({ loginStatus: true }, { activeToken: 0 }).exec();
 	return respondSuccess(res)('User Generate OTP', { users });
+});
+
+router.post('/logout', validateUserToken, async (req, res) => {
+	await Users.findByIdAndUpdate(req.user._id, { loginStatus: false, activeToken: '' }).exec();
+	return respondSuccess(res)('User Logout successful');
 });
 
 module.exports = router;

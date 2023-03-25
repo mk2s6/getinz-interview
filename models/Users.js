@@ -12,6 +12,9 @@ const UserSchema = new Schema(
 		email: {
 			type: Schema.Types.String,
 		},
+		activeToken: {
+			type: Schema.Types.String,
+		},
 		loginStatus: {
 			type: Schema.Types.Boolean,
 			default: false,
